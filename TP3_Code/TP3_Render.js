@@ -1,6 +1,126 @@
 TP3.Render = {
 	drawTreeRough: function (rootNode, scene, alpha, radialDivisions = 8, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
-		//TODO
+		const stack = [rootNode];
+		const branchGeometries = [];
+		const leafGeometries = [];
+		const appleGeometries = [];
+	  
+		while (stack.length > 0) {
+		  const currentNode = stack.pop();
+	  
+		  for (const childNode of currentNode.childNode) {
+			stack.push(childNode);
+	  
+			// Longueur et orientation
+			const p0 = currentNode.p0; 
+			const p1 = childNode.p1;
+			const branchLength = p0.distanceTo(p1);
+	  
+			// cylinder geometry
+			const branchGeometry = new THREE.CylinderBufferGeometry(
+			  0.07, // Top radius
+			  0.1,  // Bottom radius
+			  branchLength, // Height
+			  radialDivisions // Segments
+			);
+	  
+			// Creer la matrice de transformation
+			const branchMatrix = new THREE.Matrix4();
+			const direction = new THREE.Vector3().subVectors(p1, p0).normalize();
+			const quaternion = new THREE.Quaternion();
+			quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+	  
+			branchMatrix.makeRotationFromQuaternion(quaternion);
+			branchMatrix.setPosition(
+			  (p0.x + p1.x) / 2, // Midpoint x
+			  (p0.y + p1.y) / 2, // Midpoint y
+			  (p0.z + p1.z) / 2  // Midpoint z
+			);
+	  
+			branchGeometry.applyMatrix4(branchMatrix);
+			branchGeometries.push(branchGeometry);
+	  
+			// Ajouter des feuilles
+			if (Math.random() > leavesCutoff) {
+			  for (let i = 0; i < leavesDensity; i++) {
+				const leafGeometry = new THREE.PlaneBufferGeometry(alpha, alpha); // Leaf size
+	  
+				// position autour des branches
+				const leafPosition = new THREE.Vector3(
+				  p1.x + (Math.random() - 0.5) * alpha / 2, 
+				  p1.y + (Math.random() - 0.5) * alpha / 2, 
+				  p1.z + (Math.random() - 0.5) * alpha / 2
+				);
+	  
+				// orientation aleatoire
+				const leafMatrix = new THREE.Matrix4();
+				const leafQuaternion = new THREE.Quaternion();
+				leafQuaternion.setFromEuler(new THREE.Euler(
+				  Math.random() * Math.PI, 
+				  Math.random() * Math.PI, 
+				  Math.random() * Math.PI
+				));
+	  
+				leafMatrix.makeRotationFromQuaternion(leafQuaternion);
+				leafMatrix.setPosition(leafPosition);
+				leafGeometry.applyMatrix4(leafMatrix);
+	  
+				leafGeometries.push(leafGeometry);
+			  }
+			}
+	  
+			// Ajouter des pommes
+			if (Math.random() < applesProbability) {
+			  const appleGeometry = new THREE.BoxBufferGeometry(alpha, alpha, alpha); // Apple as a cube
+	  
+			  // position aleatoire des pommes
+			  const applePosition = new THREE.Vector3(
+				p0.x + Math.random() * (p1.x - p0.x), 
+				p0.y + Math.random() * (p1.y - p0.y), 
+				p0.z + Math.random() * (p1.z - p0.z)
+			  );
+	  
+			  const appleMatrix = new THREE.Matrix4();
+			  appleMatrix.setPosition(applePosition);
+			  appleGeometry.applyMatrix4(appleMatrix);
+	  
+			  appleGeometries.push(appleGeometry);
+			}
+		  }
+		}
+	  
+		// Combiner les branches
+		const mergedBranches = THREE.BufferGeometryUtils.mergeBufferGeometries(branchGeometries);
+	  
+		// Maillage final
+		const branchMaterial = new THREE.MeshLambertMaterial({ color: 0x8B5A2B });
+		const branchMesh = new THREE.Mesh(mergedBranches, branchMaterial);
+		branchMesh.applyMatrix4(matrix); 
+	  
+		// Ajouter dans la scene
+		scene.add(branchMesh);
+	  
+		// Combine tous les feuillles
+		const mergedLeaves = THREE.BufferGeometryUtils.mergeBufferGeometries(leafGeometries);
+	  
+		// Mailage final
+		const leafMaterial = new THREE.MeshPhongMaterial({ color: 0x3A5F0B, side: THREE.DoubleSide });
+		const leafMesh = new THREE.Mesh(mergedLeaves, leafMaterial);
+		leafMesh.applyMatrix4(matrix); 
+	  
+		// Ajouter dans la scene
+		scene.add(leafMesh);
+	  
+		// Combiner tous les pommes
+		const mergedApples = THREE.BufferGeometryUtils.mergeBufferGeometries(appleGeometries);
+	  
+		// Maillage final
+		const appleMaterial = new THREE.MeshPhongMaterial({ color: 0x5F0B0B });
+		const appleMesh = new THREE.Mesh(mergedApples, appleMaterial);
+		appleMesh.applyMatrix4(matrix); 
+	  
+		// Ajouter dans la scene
+		scene.add(appleMesh);
 	},
 
 	drawTreeHermite: function (rootNode, scene, alpha, leavesCutoff = 0.1, leavesDensity = 10, applesProbability = 0.05, matrix = new THREE.Matrix4()) {
