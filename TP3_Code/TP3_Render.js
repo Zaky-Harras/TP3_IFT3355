@@ -10,65 +10,66 @@ TP3.Render = {
 	  
 		  for (const childNode of currentNode.childNode) {
 			stack.push(childNode);
-	  
+
 			// Longueur et orientation
-			const p0 = currentNode.p0; 
+			const p0 = currentNode.p0;
 			const p1 = childNode.p1;
 			const branchLength = p0.distanceTo(p1);
-	  
+
 			// cylinder geometry
 			const branchGeometry = new THREE.CylinderBufferGeometry(
-			  0.07, // Top radius
-			  0.1,  // Bottom radius
+			  childNode.a1, // Top radius
+			  currentNode.a0,  // Bottom radius
 			  branchLength, // Height
 			  radialDivisions // Segments
 			);
-	  
+
 			// Creer la matrice de transformation
 			const branchMatrix = new THREE.Matrix4();
 			const direction = new THREE.Vector3().subVectors(p1, p0).normalize();
 			const quaternion = new THREE.Quaternion();
 			quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
-	  
+
 			branchMatrix.makeRotationFromQuaternion(quaternion);
 			branchMatrix.setPosition(
 			  (p0.x + p1.x) / 2, // Midpoint x
 			  (p0.y + p1.y) / 2, // Midpoint y
 			  (p0.z + p1.z) / 2  // Midpoint z
 			);
-	  
+
 			branchGeometry.applyMatrix4(branchMatrix);
 			branchGeometries.push(branchGeometry);
-	  
+
 			// Ajouter des feuilles
-			if (Math.random() > leavesCutoff) {
-			  for (let i = 0; i < leavesDensity; i++) {
-				const leafGeometry = new THREE.PlaneBufferGeometry(alpha, alpha); // Leaf size
-	  
-				// position autour des branches
-				const leafPosition = new THREE.Vector3(
-				  p1.x + (Math.random() - 0.5) * alpha / 2, 
-				  p1.y + (Math.random() - 0.5) * alpha / 2, 
-				  p1.z + (Math.random() - 0.5) * alpha / 2
-				);
-	  
-				// orientation aleatoire
-				const leafMatrix = new THREE.Matrix4();
-				const leafQuaternion = new THREE.Quaternion();
-				leafQuaternion.setFromEuler(new THREE.Euler(
-				  Math.random() * Math.PI, 
-				  Math.random() * Math.PI, 
-				  Math.random() * Math.PI
-				));
-	  
-				leafMatrix.makeRotationFromQuaternion(leafQuaternion);
-				leafMatrix.setPosition(leafPosition);
-				leafGeometry.applyMatrix4(leafMatrix);
-	  
-				leafGeometries.push(leafGeometry);
-			  }
+			if(currentNode.a0 < alpha*leavesCutoff) {
+				if (Math.random() > leavesCutoff) {
+					for (let i = 0; i < leavesDensity; i++) {
+						const leafGeometry = new THREE.PlaneBufferGeometry(alpha, alpha); // Leaf size
+
+						// position autour des branches
+						const leafPosition = new THREE.Vector3(
+							p1.x + (Math.random() - 0.5) * alpha / 2,
+							p1.y + (Math.random() - 0.5) * alpha / 2,
+							p1.z + (Math.random() - 0.5) * alpha / 2
+						);
+
+						// orientation aleatoire
+						const leafMatrix = new THREE.Matrix4();
+						const leafQuaternion = new THREE.Quaternion();
+						leafQuaternion.setFromEuler(new THREE.Euler(
+							Math.random() * Math.PI,
+							Math.random() * Math.PI,
+							Math.random() * Math.PI
+						));
+
+						leafMatrix.makeRotationFromQuaternion(leafQuaternion);
+						leafMatrix.setPosition(leafPosition);
+						leafGeometry.applyMatrix4(leafMatrix);
+
+						leafGeometries.push(leafGeometry);
+					}
+				}
 			}
-	  
 			// Ajouter des pommes
 			if (Math.random() < applesProbability) {
 			  const appleGeometry = new THREE.BoxBufferGeometry(alpha, alpha, alpha); // Apple as a cube
