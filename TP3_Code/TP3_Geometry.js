@@ -22,46 +22,49 @@ TP3.Geometry = {
 			const magnitude = v1.length() * v2.length();
 			return Math.acos(Math.min(Math.max(dotProduct / magnitude, -1), 1));
 		}
-		
+
 		// Fonction recursive
 		function simplifyNode(node) {
 			if (!node) return null;
-		
+
 			// verification pour childNode
 			if (!Array.isArray(node.childNode)) {
 				return node;
 			}
-		
+
 			// simplification des enfants
 			for (let i = 0; i < node.childNode.length; i++) {
 				node.childNode[i] = simplifyNode(node.childNode[i]);
 			}
-		
+
 			// Si a noeud peut etre colore (rouge)
 			if (node.childNode.length === 1) {
 				const child = node.childNode[0];
 				if (!node.p0 || !node.p1 || !child.p0 || !child.p1) {
 					return node;
 				}
-		
+
 				const parentVector = new THREE.Vector3().subVectors(node.p1, node.p0);
 				const childVector = new THREE.Vector3().subVectors(child.p1, node.p1);
-		
+
 				if (parentVector.length() === 0 || childVector.length() === 0) {
 					return node;
 				}
-		
+
 				const angle = calculateAngle(parentVector.normalize(), childVector.normalize());
 				if (angle < rotationThreshold) {
 					child.p0 = node.p0;
 					child.a0 = node.a0;
+					if(node === rootNode){
+						node.p1 = node.p0;
+					}
 					return child;
 				}
 			}
-		
+
 			return node;
 		}
-	
+
 		return simplifyNode(rootNode);
 
 	},
