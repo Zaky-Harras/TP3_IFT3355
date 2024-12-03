@@ -69,23 +69,23 @@ TP3.Render = {
 						leafGeometries.push(leafGeometry);
 					}
 				}
-			}
-			// Ajouter des pommes
-			if (Math.random() < applesProbability) {
-			  const appleGeometry = new THREE.BoxBufferGeometry(alpha, alpha, alpha); // Apple as a cube
-	  
-			  // position aleatoire des pommes
-			  const applePosition = new THREE.Vector3(
-				p0.x + Math.random() * (p1.x - p0.x), 
-				p0.y + Math.random() * (p1.y - p0.y), 
-				p0.z + Math.random() * (p1.z - p0.z)
-			  );
-	  
-			  const appleMatrix = new THREE.Matrix4();
-			  appleMatrix.setPosition(applePosition);
-			  appleGeometry.applyMatrix4(appleMatrix);
-	  
-			  appleGeometries.push(appleGeometry);
+				// Ajouter des pommes
+				if (Math.random() < applesProbability) {
+				  const appleGeometry = new THREE.BoxBufferGeometry(alpha, alpha, alpha); // Apple as a cube
+		  
+				  // position aleatoire des pommes
+				  const applePosition = new THREE.Vector3(
+					p0.x + Math.random() * (p1.x - p0.x), 
+					p0.y + Math.random() * (p1.y - p0.y), 
+					p0.z + Math.random() * (p1.z - p0.z)
+				  );
+		  
+				  const appleMatrix = new THREE.Matrix4();
+				  appleMatrix.setPosition(applePosition);
+				  appleGeometry.applyMatrix4(appleMatrix);
+		  
+				  appleGeometries.push(appleGeometry);
+				}
 			}
 		  }
 		}
