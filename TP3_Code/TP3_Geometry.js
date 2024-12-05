@@ -70,7 +70,52 @@ TP3.Geometry = {
 	},
 
 	generateSegmentsHermite: function (rootNode, lengthDivisions = 4, radialDivisions = 8) {
-		//TODO
+		function generateRadialPoints(center, normal, radius, radialDivisions) {
+			const radialPoints = [];
+			const tangent = new THREE.Vector3(-normal.y, normal.x, 0).normalize(); // Perpendicular vector
+			const bitangent = new THREE.Vector3().crossVectors(normal, tangent).normalize();
+	
+			for (let i = 0; i < radialDivisions; ++i) {
+				const angle = (2.0 * Math.PI * i) / radialDivisions;
+				const offset = tangent.clone().multiplyScalar(Math.cos(angle))
+					.add(bitangent.clone().multiplyScalar(Math.sin(angle)))
+					.multiplyScalar(radius);
+				radialPoints.push(center.clone().add(offset));
+			}
+			return radialPoints;
+		}
+	
+		function computeSections(node, lengthDivisions, radialDivisions) {
+			const sections = [];
+			const p0 = node.p0.clone();
+			const p1 = node.p1.clone();
+			const v0 = p1.clone().sub(p0);
+			const v1 = node.parentNode ? node.parentNode.p1.clone().sub(node.parentNode.p0) : v0;
+	
+			for (let i = 0; i <= lengthDivisions; ++i) {
+				const t = i / lengthDivisions;
+				const [position, tangent] = TP3.Geometry.hermite(p0, p1, v0, v1, t);
+	
+				const radius = node.a0 + t * (node.a1 - node.a0); // Interpolating radius
+				const radialPoints = generateRadialPoints(position, tangent, radius, radialDivisions);
+	
+				sections.push(radialPoints);
+			}
+	
+			return sections;
+		}
+	
+		function traverseNode(node) {
+			if (!node) return;
+	
+			node.sections = computeSections(node, lengthDivisions, radialDivisions);
+	
+			for (const child of node.childNode) {
+				traverseNode(child);
+			}
+		}
+	
+		traverseNode(rootNode);
 	},
 
 	hermite: function (h0, h1, v0, v1, t) {
