@@ -34,7 +34,7 @@ TP3.Physics = {
 		return mass;
 	},
 
-	applyForces: async function (node, dt, time) {
+	applyForces: function (node, dt, time) {
 
 		var u = Math.sin(1 * time) * 4;
 		u += Math.sin(2.5 * time) * 2;
@@ -50,18 +50,21 @@ TP3.Physics = {
 		node.vel.add(new THREE.Vector3(0, -node.mass, 0).multiplyScalar(dt));
 
 		// TODO: Projection du mouvement, force de restitution et amortissement de la velocite
-		await new Promise(r => setTimeout(r, 10));
-		if(!node.initalDirection){node.initalDirection = node.p1.clone().addScaledVector(node.p0, -1);}
+		if(!node.initalDirection){node.initalDirection = node.p1.clone().addScaledVector(node.p0, -1);}	//initialDirection = p1 - p0
 		if(node.parentRotation){
 			node.p0.applyMatrix4(node.parentRotation);
-			p1_t_plus_dt = node.p1.clone().addScaledVector(node.vel, dt/100);			    			//p1_t_plus_dt = p1_t + v * dt
+			p1_t_plus_dt = node.p1.clone().addScaledVector(node.vel, dt);			    				//p1_t_plus_dt = p1_t + v * dt
 			newVector = p1_t_plus_dt.addScaledVector(node.p0, -1);										//newVector = p1_t_plus_dt - p0
 			newVector.normalize();
 			oldVector = node.p1.clone().addScaledVector(node.p0, -1);									//oldVector = p1_t - p0
 			oldVector.normalize();
 			rotationAngle = oldVector.angleTo(newVector);
-			rotationMatrix = new THREE.Matrix4().makeRotationAxis(oldVector.clone().cross(newVector).normalize(), rotationAngle);	//Trouver matrix de rotation
-			tranformationMatrix = rotationMatrix.multiply(node.parentRotation);
+			rotationMatrix = new THREE.Matrix4().makeRotationAxis(oldVector.clone().cross(newVector).normalize(), rotationAngle);
+			tranformationMatrix = new THREE.Matrix4();
+			tranformationMatrix.multiply(new THREE.Matrix4().makeTranslation(node.p0.x, node.p0.y, node.p0.z));
+			tranformationMatrix.multiply(rotationMatrix);
+			tranformationMatrix.multiply(new THREE.Matrix4().makeTranslation(-node.p0.x, -node.p0.y, -node.p0.z));
+			tranformationMatrix.multiply(node.parentRotation);
 		} else {
 			tranformationMatrix = new THREE.Matrix4();
 		}
@@ -70,18 +73,24 @@ TP3.Physics = {
 		node.vel = old_p1.addScaledVector(node.p1, -1);							   					//Remplacer l'ancienne velocite par la vrai velocit
 
 		currentDirection = node.p1.clone().addScaledVector(node.p0, -1);
-		velRestitution = currentDirection.addScaledVector(node.initalDirection, -1);
-		velRestitution.x = velRestitution.x^2;
-		velRestitution.y = velRestitution.y^2;
-		velRestitution.z = velRestitution.z^2;
-		velRestitution.multiplyScalar(node.a0*1000);
-		velRestitution.negate();
-		//node.vel.add(velRestitution);
+		restitutionAngle = node.initalDirection.angleTo(currentDirection);
+		restitutionRotationMatrix = new THREE.Matrix4().makeTranslation(node.p0.x, node.p0.y, node.p0.z);
+		restitutionRotationMatrix.multiply(new THREE.Matrix4().makeRotationAxis(currentDirection.cross(node.initalDirection).normalize(), restitutionAngle));
+		restitutionRotationMatrix.multiply(new THREE.Matrix4().makeTranslation(-node.p0.x, -node.p0.y, -node.p0.z));
+		pseudo_new_p = node.p1.clone().applyMatrix4(restitutionRotationMatrix);
+		restitutionVelocity = pseudo_new_p.addScaledVector(node.p1, -1);
+		restitutionVelocity.x = restitutionVelocity.x < 0 ? -1*restitutionVelocity.x**2 : restitutionVelocity.x**2;
+		restitutionVelocity.y = restitutionVelocity.y < 0 ? -1*restitutionVelocity.y**2 : restitutionVelocity.y**2;
+		restitutionVelocity.z = restitutionVelocity.z < 0 ? -1*restitutionVelocity.z**2 : restitutionVelocity.z**2;
+		restitutionVelocity.multiplyScalar(node.a0*1000);
+		node.vel.add(restitutionVelocity);
 		node.vel.multiplyScalar(0.7);
 
 		// Appel recursif sur les enfants
 		for (var i = 0; i < node.childNode.length; i++) {
 			node.childNode[i].parentRotation = tranformationMatrix;
+		}
+		for (var i = 0; i < node.childNode.length; i++) {
 			this.applyForces(node.childNode[i], dt, time);
 		}
 	}
