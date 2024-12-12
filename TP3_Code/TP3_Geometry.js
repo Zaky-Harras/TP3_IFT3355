@@ -70,6 +70,8 @@ TP3.Geometry = {
 	},
 
 	generateSegmentsHermite: function (rootNode, lengthDivisions = 4, radialDivisions = 8) {
+		let vertexIndexCounter = 0; // Counter pour les indices des sommets
+	
 		function generateRadialPoints(center, normal, radius, radialDivisions) {
 			const radialPoints = [];
 			const tangent = new THREE.Vector3(-normal.y, normal.x, 0).normalize(); // Perpendicular vector
@@ -87,6 +89,7 @@ TP3.Geometry = {
 	
 		function computeSections(node, lengthDivisions, radialDivisions) {
 			const sections = [];
+			const vertexIndices = []; // Pour garder les indices
 			const p0 = node.p0.clone();
 			const p1 = node.p1.clone();
 			const v0 = p1.clone().sub(p0);
@@ -99,9 +102,16 @@ TP3.Geometry = {
 				const radius = node.a0 + t * (node.a1 - node.a0); // Interpolating radius
 				const radialPoints = generateRadialPoints(position, tangent, radius, radialDivisions);
 	
+				const indicesForCurrentSection = [];
+				radialPoints.forEach(() => {
+					indicesForCurrentSection.push(vertexIndexCounter++);
+				});
+	
+				vertexIndices.push(indicesForCurrentSection);
 				sections.push(radialPoints);
 			}
 	
+			node.vertexIndices = vertexIndices;
 			return sections;
 		}
 	
