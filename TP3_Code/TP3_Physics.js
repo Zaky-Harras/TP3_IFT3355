@@ -70,6 +70,7 @@ TP3.Physics = {
 		}
 		old_p1 = node.p1.clone();
 		node.p1.applyMatrix4(tranformationMatrix); 													//Appliquer matrix de rotation à p1_t
+		node.tranformationMatrix = tranformationMatrix;
 		node.vel = old_p1.addScaledVector(node.p1, -1);							   					//Remplacer l'ancienne velocite par la vrai velocit
 
 		currentDirection = node.p1.clone().addScaledVector(node.p0, -1);

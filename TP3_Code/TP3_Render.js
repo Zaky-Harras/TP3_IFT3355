@@ -135,16 +135,13 @@ TP3.Render = {
 	
 		while (stack.length > 0) {
 			const currentNode = stack.pop();
-	
-			
+
 			for (const childNode of currentNode.childNode) {
 				stack.push(childNode);
-	
 				const sections = childNode.sections;
 				console.log('ChildNode sections:', childNode.sections);
 
 
-	
 				// Initialiser BufferGeometry
 				const vertices = [];
 				const indices = [];
@@ -170,7 +167,7 @@ TP3.Render = {
 	
 							indices.push(
 								vertexIndex + nextJ, 
-								vertexIndex + previousSection.length + nextJ, 
+								vertexIndex + previousSection.length + nextJ,
 								vertexIndex + previousSection.length + j 
 							);
 						}
@@ -178,15 +175,14 @@ TP3.Render = {
 					vertexIndex += radialPoints.length;
 				}
 	
-				// Creer BufferGeometry 
+				// Creer BufferGeometry
 				const f32vertices = new Float32Array(vertices); // Convertir a Float32Array
 				const branchGeometry = new THREE.BufferGeometry();
 				branchGeometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3)); // Initialiser les positions
-				branchGeometry.setIndex(indices); 
+				branchGeometry.setIndex(indices);
 				branchGeometry.computeVertexNormals(); // Les normales
 	
 				branchGeometries.push(branchGeometry);
-	
 				// Ajouter des feuilles
 				if (currentNode.a0 < alpha * leavesCutoff) {
 					for (let i = 0; i < leavesDensity; i++) {
@@ -253,6 +249,16 @@ TP3.Render = {
 
 	updateTreeHermite: function (trunkGeometryBuffer, leavesGeometryBuffer, applesGeometryBuffer, rootNode) {
 		//TODO
+		/*
+		for (const section of rootNode.sections) {
+			for (const point of section) {
+				point.applyMatrix4(rootNode.tranformationMatrix);
+			}
+		}
+		for(const child of rootNode.childNode){
+			this.updateTreeHermite(child);
+		}
+		*/
 	},
 
 	drawTreeSkeleton: function (rootNode, scene, color = 0xffffff, matrix = new THREE.Matrix4()) {
