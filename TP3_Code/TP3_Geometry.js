@@ -12,19 +12,26 @@ class Node {
 
 		this.sections = null; //Liste contenant une liste de points representant les segments circulaires du cylindre generalise
 
-		this.hasLeafs = false;
-		this.hasApple = false;
+		this.hasLeafs;
+		this.hasApple;
 		this.tranformationMatrix = null;
 		this.f32TrunkSize = null;
 		this.f32LeafSize = null;
 		this.f32AppleSize = null;
-		this.appleAmount = 0;
 	}
-	getAppleAmount(){
-		return this.appleAmount;
+	set hasApple(bool){
+		this._hasApple = bool;
 	}
-	increaseAppleAmount(){
-		this.appleAmount += 1;
+	get hasApple(){
+		return this._hasApple;
+	}
+
+	set hasLeafs(bool){
+		this._hasLeafs = bool;
+	}
+
+	get hasLeafs(){
+		return this._hasLeafs;
 	}
 }
 

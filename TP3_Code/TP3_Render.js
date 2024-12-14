@@ -251,7 +251,6 @@ TP3.Render = {
 		let leavesProgess = 0;
 		let appleProgess = 0;
 		let currentPoint;
-		let apples =0;
 
 		while (stack.length > 0) {
 			const currentNode = stack.pop();
@@ -279,7 +278,6 @@ TP3.Render = {
 				}
 
 				if(childNode.hasApple){
-					apples++;
 					for(let i= appleProgess; i < appleProgess+childNode.f32AppleSize; i+=3){
 						currentPoint = new THREE.Vector3(applesGeometryBuffer[i], applesGeometryBuffer[i + 1], applesGeometryBuffer[i + 2]);
 						currentPoint.applyMatrix4(childNode.tranformationMatrix);
@@ -291,7 +289,6 @@ TP3.Render = {
 				}
 			}
 		}
-		console.log(apples);
 	},
 
 	drawTreeSkeleton: function (rootNode, scene, color = 0xffffff, matrix = new THREE.Matrix4()) {
