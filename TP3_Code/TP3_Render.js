@@ -129,62 +129,56 @@ TP3.Render = {
 		const branchGeometries = [];
 		const leafGeometries = [];
 		const appleGeometries = [];
+		let leaveNodes = 0;
 	
 		// Generer les courbes de Hermite pour les branches
-		TP3.Geometry.generateSegmentsHermite(rootNode);
 	
 		while (stack.length > 0) {
 			const currentNode = stack.pop();
 
+
 			for (const childNode of currentNode.childNode) {
 				stack.push(childNode);
+
 				const sections = childNode.sections;
-				console.log('ChildNode sections:', childNode.sections);
 
+				let branchGeometry = new THREE.BufferGeometry();
 
-				// Initialiser BufferGeometry
-				const vertices = [];
-				const indices = [];
-				let vertexIndex = 0;
-	
-				for (let i = 0; i < sections.length; i++) {
-					const radialPoints = sections[i];
-					for (const point of radialPoints) {
-						vertices.push(point.x, point.y, point.z);
+				let positions = [];
+				for(let section of sections){
+					for(let point of section){
+						positions.push(point.x, point.y, point.z);
 					}
-	
-					// Creer des faces
-					if (i > 0) {
-						const previousSection = sections[i - 1];
-						for (let j = 0; j < radialPoints.length; j++) {
-							const nextJ = (j + 1) % radialPoints.length;
-	
-							indices.push(
-								vertexIndex + j, // Actuel
-								vertexIndex + nextJ, // Prochaine
-								vertexIndex + previousSection.length + j
-							);
-	
-							indices.push(
-								vertexIndex + nextJ, 
-								vertexIndex + previousSection.length + nextJ,
-								vertexIndex + previousSection.length + j 
-							);
-						}
-					}
-					vertexIndex += radialPoints.length;
 				}
-	
-				// Creer BufferGeometry
-				const f32vertices = new Float32Array(vertices); // Convertir a Float32Array
-				const branchGeometry = new THREE.BufferGeometry();
-				branchGeometry.setAttribute("position", new THREE.BufferAttribute(f32vertices, 3)); // Initialiser les positions
+
+				let indices = [];
+				let bottomLeft;
+				let bottomRight;
+				let topRight;
+				let topLeft;
+				for(let i=0;i<sections.length-1;i++){
+					for(let j=0;j<sections[i].length;j++){
+						bottomLeft = i*sections[i].length + j;
+						bottomRight = j === sections[i].length-1 ? i*sections[i].length : bottomLeft+1;
+						topLeft = bottomLeft + sections[i].length;
+						topRight = bottomRight + sections[i].length;
+						indices.push(bottomLeft, bottomRight, topLeft);
+						indices.push(bottomRight, topRight, topLeft);
+					}
+				}
+
+
+				let f32positions =  new Float32Array(positions);
+				childNode.f32TrunkSize = positions.length;
+				branchGeometry.setAttribute("position", new THREE.BufferAttribute(f32positions, 3));
 				branchGeometry.setIndex(indices);
-				branchGeometry.computeVertexNormals(); // Les normales
-	
+				branchGeometry.computeVertexNormals();
 				branchGeometries.push(branchGeometry);
+
 				// Ajouter des feuilles
 				if (currentNode.a0 < alpha * leavesCutoff) {
+					currentNode.hasLeafs = true;
+					leaveNodes++;
 					for (let i = 0; i < leavesDensity; i++) {
 						const leafGeometry = new THREE.PlaneBufferGeometry(alpha, alpha); // Leaf geometry
 						const leafPosition = new THREE.Vector3(
@@ -204,6 +198,7 @@ TP3.Render = {
 						leafMatrix.makeRotationFromQuaternion(leafQuaternion);
 						leafMatrix.setPosition(leafPosition);
 						leafGeometry.applyMatrix4(leafMatrix);
+						currentNode.f32LeafSize += leafGeometry.attributes.position.array.length;
 						leafGeometries.push(leafGeometry);
 					}
 	
@@ -219,12 +214,13 @@ TP3.Render = {
 						const appleMatrix = new THREE.Matrix4();
 						appleMatrix.setPosition(applePosition);
 						appleGeometry.applyMatrix4(appleMatrix);
+						currentNode.f32AppleSize = appleGeometry.attributes.position.array.length;
 						appleGeometries.push(appleGeometry);
+						currentNode.hasApple = true;
 					}
 				}
 			}
 		}
-	
 		// Combiner branch geometries
 		const mergedBranches = THREE.BufferGeometryUtils.mergeBufferGeometries(branchGeometries);
 		const branchMaterial = new THREE.MeshLambertMaterial({ color: 0x8B5A2B });
@@ -245,20 +241,57 @@ TP3.Render = {
 		const appleMesh = new THREE.Mesh(mergedApples, appleMaterial);
 		appleMesh.applyMatrix4(matrix);
 		scene.add(appleMesh);
+
+		return [mergedBranches, mergedLeaves, mergedApples];
 	},
 
 	updateTreeHermite: function (trunkGeometryBuffer, leavesGeometryBuffer, applesGeometryBuffer, rootNode) {
-		//TODO
-		/*
-		for (const section of rootNode.sections) {
-			for (const point of section) {
-				point.applyMatrix4(rootNode.tranformationMatrix);
+		const stack = [rootNode];
+		let trunkProgress = 0;
+		let leavesProgess = 0;
+		let appleProgess = 0;
+		let currentPoint;
+		let apples =0;
+
+		while (stack.length > 0) {
+			const currentNode = stack.pop();
+			for (const childNode of currentNode.childNode) {
+				stack.push(childNode);
+
+				for (let i = trunkProgress; i < trunkProgress + childNode.f32TrunkSize; i += 3) {
+					currentPoint = new THREE.Vector3(trunkGeometryBuffer[i], trunkGeometryBuffer[i + 1], trunkGeometryBuffer[i + 2]);
+					currentPoint.applyMatrix4(childNode.tranformationMatrix);
+					trunkGeometryBuffer[i] = currentPoint.x;
+					trunkGeometryBuffer[i + 1] = currentPoint.y;
+					trunkGeometryBuffer[i + 2] = currentPoint.z;
+				}
+				trunkProgress += childNode.f32TrunkSize;
+
+				if(childNode.hasLeafs){
+					for(let i= leavesProgess ; i < leavesProgess+childNode.f32LeafSize; i+=3){
+						currentPoint = new THREE.Vector3(leavesGeometryBuffer[i], leavesGeometryBuffer[i + 1], leavesGeometryBuffer[i + 2]);
+						currentPoint.applyMatrix4(childNode.tranformationMatrix);
+						leavesGeometryBuffer[i] = currentPoint.x;
+						leavesGeometryBuffer[i + 1] = currentPoint.y;
+						leavesGeometryBuffer[i + 2] = currentPoint.z;
+					}
+					leavesProgess += childNode.f32LeafSize;
+				}
+
+				if(childNode.hasApple){
+					apples++;
+					for(let i= appleProgess; i < appleProgess+childNode.f32AppleSize; i+=3){
+						currentPoint = new THREE.Vector3(applesGeometryBuffer[i], applesGeometryBuffer[i + 1], applesGeometryBuffer[i + 2]);
+						currentPoint.applyMatrix4(childNode.tranformationMatrix);
+						applesGeometryBuffer[i] = currentPoint.x;
+						applesGeometryBuffer[i + 1] = currentPoint.y;
+						applesGeometryBuffer[i + 2] = currentPoint.z;
+					}
+					appleProgess += childNode.f32AppleSize;
+				}
 			}
 		}
-		for(const child of rootNode.childNode){
-			this.updateTreeHermite(child);
-		}
-		*/
+		console.log(apples);
 	},
 
 	drawTreeSkeleton: function (rootNode, scene, color = 0xffffff, matrix = new THREE.Matrix4()) {

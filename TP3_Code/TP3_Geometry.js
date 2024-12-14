@@ -11,6 +11,20 @@ class Node {
 		this.a1 = null; //Rayon de la branche a p1
 
 		this.sections = null; //Liste contenant une liste de points representant les segments circulaires du cylindre generalise
+
+		this.hasLeafs = false;
+		this.hasApple = false;
+		this.tranformationMatrix = null;
+		this.f32TrunkSize = null;
+		this.f32LeafSize = null;
+		this.f32AppleSize = null;
+		this.appleAmount = 0;
+	}
+	getAppleAmount(){
+		return this.appleAmount;
+	}
+	increaseAppleAmount(){
+		this.appleAmount += 1;
 	}
 }
 
